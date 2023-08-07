@@ -15,9 +15,9 @@
     --light-letters: white;
     --OBR-offset-fore: rgb(230, 230, 238);
     --OBR-offset-back: rgb(49, 49, 65);
-    --OBR-offset-back-half: rgba(30, 34, 49, 0.757);
+    --OBR-offset-back-half: rgba(30, 34, 49, 0.25);
     --OBR-dark-blue: rgb(30, 34, 49);
-    --OBR-dark-blue-trans: rgba(30, 34, 49, 0.507);
+    --OBR-dark-blue-trans: rgba(30, 34, 49, 0.25);
     --OBR-light-blue: rgb(60, 62, 75);
 
     --dice-color: #159cc5;
@@ -37,9 +37,10 @@
     :root {
         --OBR-offset-fore: rgb(44, 44, 46);
         --OBR-offset-back: rgb(210, 210, 223);
-        --OBR-dark-blue: rgb(183, 184, 189);
+        --OBR-offset-back-half: rgba(210, 210, 223, 0.25);
+        --OBR-dark-blue: rgb(255, 255, 255);
         --OBR-light-blue: rgb(231, 233, 238);
-        --OBR-dark-blue-trans: rgba(255, 255, 255, 0.507);
+        --OBR-dark-blue-trans: rgba(255, 255, 255, 0.25);
         --OBR-Purple-Select: rgb(153, 102, 255, 0.5);
 
         --light-letters: black;
@@ -91,7 +92,7 @@ body
     background-repeat: no-repeat;
     background-color: var(--OBR-offset-back-half);
     color: var(--light-letters);
-    width: calc(100% - 62px);
+    width: calc(100% - 110px);
     /* Account for odd padding*/
     font-size: 16px;
     padding: 12px 20px 12px 40px;
@@ -111,7 +112,6 @@ body
     box-sizing: border-box;
 }
 #searchList {
-    list-style-type: none;
     margin: 0;
     padding: 0;
 }
@@ -135,7 +135,30 @@ body
 
 .clear {
     position: absolute;
-    right: 0px;
+    right: 50px;
     margin: 10px;
     cursor: pointer;
+}
+
+.count {
+    position: absolute;
+    text-align: center;
+    line-height: 2.2;
+    font-weight: bolder;
+    font-size: large;
+    right: 8px;
+    top: 8px;
+    width: 40px;
+    height: 42px;
+    cursor: none;
+    border: 1px solid var(--OBR-dark-blue);
+    background-color: var(--OBR-offset-back-half);
+}
+
+#startup
+{
+    width:100%;
+    height:100%;
+    text-align: center;
+    font-size: xx-large;
 }
