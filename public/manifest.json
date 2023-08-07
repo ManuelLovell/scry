@@ -1,0 +1,15 @@
+{
+  "name": "Scry!",
+  "description": "A simple lookup to finding your assets in scene.",
+  "version": "1.0.0",
+  "author": "Battle-System",
+  "manifest_version": 1,
+  "icon": "/logo.png",
+  "action": {
+    "title": "Scry!",
+    "icon": "/logo.svg",
+    "popover": "/",
+    "height": 300,
+    "width": 300
+  }
+}
