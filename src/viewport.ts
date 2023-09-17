@@ -1,5 +1,4 @@
-import OBR from "@owlbear-rodeo/sdk";
-import { IStoredItem } from "./interfaces";
+import OBR, { Image } from "@owlbear-rodeo/sdk";
 
 export class ViewportFunctions
 {
@@ -7,7 +6,7 @@ export class ViewportFunctions
      * Center the current OBR viewport on an image
      * @param {import("@owlbear-rodeo/sdk").Image} item - The image item
      */
-    static async CenterViewportOnImage(ctu: IStoredItem)
+    static async CenterViewportOnImage(ctu: Image)
     {
         const dpi = await OBR.scene.grid.getDpi();
         const scale = await OBR.viewport.getScale();
@@ -45,16 +44,16 @@ export class ViewportFunctions
      * @param {number} dpi - The base DPI of the scene
      * @returns {import("@owlbear-rodeo/sdk").Vector2}
      */
-    static async GetImageCenter(ctu: IStoredItem, dpi: number)
+    static async GetImageCenter(ctu: Image, dpi: number)
     {
-        const dpiScale = dpi / ctu.dpi;
-        const width = ctu.width * dpiScale;
-        const height = ctu.height * dpiScale;
-        const offsetX = (ctu.offsetx / ctu.width) * width;
-        const offsetY = (ctu.offsety / ctu.height) * height;
+        const dpiScale = dpi / ctu.grid.dpi;
+        const width = ctu.image.width * dpiScale;
+        const height = ctu.image.height * dpiScale;
+        const offsetX = (ctu.grid.offset.x / ctu.image.width) * width;
+        const offsetY = (ctu.grid.offset.y / ctu.image.height) * height;
         return {
-            x: ctu.xpos - offsetX + width / 2,
-            y: ctu.ypos - offsetY + height / 2,
+            x: ctu.position.x - offsetX + width / 2,
+            y: ctu.position.y - offsetY + height / 2,
         };
     }
 }
