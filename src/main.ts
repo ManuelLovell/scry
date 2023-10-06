@@ -27,7 +27,7 @@ OBR.onReady(async () =>
     }
 
     role = await OBR.player.getRole();
-    OBR.scene.onReadyChange(async (ready) =>
+    OBR.scene.onReadyChange(async (ready: boolean) =>
     {
         if (ready)
         {
@@ -63,10 +63,11 @@ async function SetupForm(): Promise<void>
 
     ///Scrolling News
     const textArray = [
-        "Scry! v1.1",
+        "Scry! v1.1.1",
         "'Vanish' button temp-removes assets.",
         "'Trash' is just another delete.",
-        "Fixed player Vanish/Delete permissions."];
+        "Fixed player Vanish/Delete permissions.",
+        "Added 'ALL' and 'EVERYTHING' to search."];
 
     let currentIndex = 0;
     const textContainer = document.getElementById("bannerText")!;
@@ -124,20 +125,33 @@ async function SetupForm(): Promise<void>
         {
             console.log("Unable to retrieve VanishedItems from local storage.");
         }
-        const term = searchInput.value.toUpperCase();
+        let term = searchInput.value.toUpperCase();
         if (!term || term.length < 2)
         {
             countElement.innerText = "...";
             return searchList.innerHTML = "";
         }
 
+        let foundItems = [];
+        if (searchInput.value.toUpperCase() === "ALL"
+            || searchInput.value.toUpperCase() === "EVERYTHING")
+        {
+            foundItems = sceneItems.map(val => ({
+                item: Object.assign(val, {}),
+                matches: [],
+                score: 1
+            }));
+        }
+        else
+        {
+            const fuse = new Fuse(sceneItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
+            foundItems = fuse.search(term);
+        }
+
         searchList.innerHTML = "";
         countElement.innerText = "...";
         let increment = 1;
         let foundBase = 0;
-
-        const fuse = new Fuse(sceneItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
-        const foundItems = fuse.search(term);
 
         if (foundItems.length > 0)
         {
@@ -170,7 +184,7 @@ async function SetupForm(): Promise<void>
                         event.stopPropagation();
                         if (vanishButton.value === "off")
                         {
-                            //await OBR.player.deselect([fuseItem.item.id]);
+                            await OBR.player.deselect([fuseItem.item.id]);
 
                             // Get the item fresh from OBR, or it'll be snapshot from the search
                             const freshItem = await OBR.scene.items.getItems([fuseItem.item.id]);
@@ -260,8 +274,21 @@ async function SetupForm(): Promise<void>
         if (role === "GM")
         {
             // For the vanished cache
-            const vFuse = new Fuse(storedItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
-            const vFoundItems = vFuse.search(term);
+            let vFoundItems = [];
+            if (searchInput.value.toUpperCase() === "ALL"
+                || searchInput.value.toUpperCase() === "EVERYTHING")
+            {
+                vFoundItems = storedItems.map(val => ({
+                    item: Object.assign(val, {}),
+                    matches: [],
+                    score: 1
+                }));
+            }
+            else
+            {
+                const vFuse = new Fuse(storedItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
+                vFoundItems = vFuse.search(term);
+            }
 
             if (vFoundItems.length > 0)
             {
@@ -312,7 +339,7 @@ async function SetupForm(): Promise<void>
                             if (freshItem.length > 0)
                             {
                                 storedItems.push(freshItem[0]);
-                                //await OBR.player.deselect([vFuseItem.item.id]);
+                                await OBR.player.deselect([vFuseItem.item.id]);
                                 await OBR.scene.items.deleteItems([vFuseItem.item.id]);
                                 vanishButton.value = "off";
                                 vanishButton.src = "/eyeclosed.svg";
