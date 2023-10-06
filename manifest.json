@@ -1,7 +1,7 @@
 {
   "name": "Scry!",
-  "description": "A simple lookup to finding your assets in scene.",
-  "version": "1.1.0",
+  "description": "A simple lookup to finding/vanishing your assets in scene.",
+  "version": "1.1.1",
   "author": "Battle-System",
   "manifest_version": 1,
   "icon": "/logo.png",
