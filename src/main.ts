@@ -63,11 +63,13 @@ async function SetupForm(): Promise<void>
 
     ///Scrolling News
     const textArray = [
-        "Scry! v1.1.1",
+        "Scry! v1.1.2",
+        "Fixed silly 'Undefined' name",
         "'Vanish' button temp-removes assets.",
         "'Trash' is just another delete.",
         "Fixed player Vanish/Delete permissions.",
-        "Added 'ALL' and 'EVERYTHING' to search."];
+        "Added 'ALL' and 'EVERYTHING' to search."
+        ];
 
     let currentIndex = 0;
     const textContainer = document.getElementById("bannerText")!;
@@ -164,7 +166,7 @@ async function SetupForm(): Promise<void>
 
                 const listItem = document.createElement("li");
                 let trueName = fuseItem.item.name.toUpperCase().includes(term) ? "" : ` (${fuseItem.item.customTextName})`;
-                if (trueName == " ()") trueName = "";
+                if (trueName === " ()" || trueName === ' (undefined)') trueName = "";
 
                 listItem.id = "li-" + fuseItem.item.id;
                 listItem.innerHTML = `${increment}.   ${fuseItem.item.name}${trueName}${fuseItem.item.visible ? "" : " (Hidden)"}`;
@@ -301,7 +303,7 @@ async function SetupForm(): Promise<void>
 
                     const listItem = document.createElement("li");
                     let trueName = vFuseItem.item.name.toUpperCase().includes(term) ? "" : ` (${vFuseItem.item.text?.plainText})`;
-                    if (trueName == " ()") trueName = "";
+                    if (trueName === " ()" || trueName === ' (undefined)') trueName = "";
 
                     listItem.id = "li-" + vFuseItem.item.id;
                     listItem.innerHTML = `${increment}.   ${vFuseItem.item.name}${trueName}${vFuseItem.item.visible ? "" : " (Hidden)"}`;
