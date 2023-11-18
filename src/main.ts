@@ -93,10 +93,10 @@ async function SetupForm(): Promise<void>
 
     ///Scrolling News
     const textArray = [
-        "Scry! v1.1.3",
-        "Improved resilience, saves Vanish to scene",
-        "Added toggle to stop Player Search",
         "Added 'ALL' and 'EVERYTHING' to search.",
+        "Scry! v1.1.31",
+        "Click Lock to disable Player Search",
+        "Improved resilience, saves Vanish to scene",
     ];
 
     let currentIndex = 0;
@@ -132,13 +132,14 @@ async function SetupForm(): Promise<void>
     const countElement = document.getElementById("counter")! as HTMLDivElement;
     const toggleElement = document.getElementById("toggler")! as HTMLDivElement;
     countElement.innerText = "...";
+    countElement.title = "Number of Results";
     const clearButton = document.getElementById("clearSearch") as HTMLButtonElement;
 
     if (role === "GM")
     {
         const playerToggle = document.createElement('input');
         playerToggle.type = "image";
-        playerToggle.title = "Vanish this Item";
+        playerToggle.title = "Disable Player Access";
         playerToggle.className = "toggleClickable";
         playerToggle.value = locked ? "on" : "off";
         playerToggle.onclick = async function (event: Event)
@@ -163,6 +164,7 @@ async function SetupForm(): Promise<void>
         toggleElement.appendChild(playerToggle);
     }
 
+    clearButton.title = "Clear Search";
     clearButton.onclick = () =>
     {
         searchInput.value = "";
