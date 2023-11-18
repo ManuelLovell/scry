@@ -6,8 +6,11 @@ import './style.css'
 import { Constants } from './constants';
 
 let sceneItems: any[] = [];
-let storedItems: any[] = [];
+let storedMetadata: any[] = [];
+let locked = false;
 let role: string;
+const appWindow = document.querySelector<HTMLDivElement>('#app')!
+const lockWindow = document.querySelector<HTMLDivElement>('#locked')!
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `<div id="startup">Awaiting scene...</div>`;
 
@@ -39,6 +42,32 @@ OBR.onReady(async () =>
         }
     });
 
+    OBR.scene.onMetadataChange(async (metadata) =>
+    {
+        storedMetadata = metadata[`${Constants.EXTENSIONID}/stored`] as [];
+        if (!storedMetadata) storedMetadata = [];
+        
+        const checkLock = metadata[`${Constants.EXTENSIONID}/locked`] as boolean;
+        locked = checkLock ? true : false;
+        if (role === "PLAYER")
+        {
+            if (locked)
+            {
+                appWindow.hidden = true;
+                appWindow.style.display = "none";
+                lockWindow.hidden = false;
+                await OBR.action.setHeight(50);
+            }
+            else
+            {
+                appWindow.hidden = false;
+                appWindow.style.display = "flex";
+                lockWindow.hidden = true;
+                await OBR.action.setHeight(300);
+            }
+        }
+    });
+
     OBR.scene.items.onChange((bItems) =>
     {
         const items = bItems as Image[];
@@ -51,10 +80,11 @@ async function SetupForm(): Promise<void>
     await FilterItems(await OBR.scene.items.getItems());
     document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <div id="counter" class="count"></div>
+        ${role === "GM" ? '<div id="toggler" class="toggler"></div>' : ''}
         <div class="wrapper">
         <div id="bannerText"></div>
-            <input type="text" id="searchBar" onkeyup="StartSearch()" placeholder="Search for..">
-            <button id="clearSearch" class="clear">X</button>
+            <input type="text" id="${role === 'GM' ? '' : 'player'}searchBar" onkeyup="StartSearch()" placeholder="Search for..">
+            <button id="clearSearch" class="${role === 'GM' ? '' : 'player'}clear">X</button>
         </div>
         <div class="scrollable">
             <ol id="searchList"></ol>
@@ -63,13 +93,11 @@ async function SetupForm(): Promise<void>
 
     ///Scrolling News
     const textArray = [
-        "Scry! v1.1.2",
-        "Fixed silly 'Undefined' name",
-        "'Vanish' button temp-removes assets.",
-        "'Trash' is just another delete.",
-        "Fixed player Vanish/Delete permissions.",
-        "Added 'ALL' and 'EVERYTHING' to search."
-        ];
+        "Scry! v1.1.3",
+        "Improved resilience, saves Vanish to scene",
+        "Added toggle to stop Player Search",
+        "Added 'ALL' and 'EVERYTHING' to search.",
+    ];
 
     let currentIndex = 0;
     const textContainer = document.getElementById("bannerText")!;
@@ -102,8 +130,38 @@ async function SetupForm(): Promise<void>
     const searchList = document.getElementById("searchList") as HTMLUListElement;
     const searchInput = document.getElementById("searchBar") as HTMLInputElement;
     const countElement = document.getElementById("counter")! as HTMLDivElement;
+    const toggleElement = document.getElementById("toggler")! as HTMLDivElement;
     countElement.innerText = "...";
     const clearButton = document.getElementById("clearSearch") as HTMLButtonElement;
+
+    if (role === "GM")
+    {
+        const playerToggle = document.createElement('input');
+        playerToggle.type = "image";
+        playerToggle.title = "Vanish this Item";
+        playerToggle.className = "toggleClickable";
+        playerToggle.value = locked ? "on" : "off";
+        playerToggle.onclick = async function (event: Event)
+        {
+            event.stopPropagation();
+            if (playerToggle.value === "off")
+            {
+                playerToggle.value = "on";
+                playerToggle.src = "/lock.svg";
+                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/locked`]: true });
+            }
+            else
+            {
+    
+                playerToggle.value = "off";
+                playerToggle.src = "/unlock.svg";
+                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/locked`]: false });
+    
+            }
+        };
+        playerToggle.src = locked ? "/lock.svg" : "/unlock.svg";
+        toggleElement.appendChild(playerToggle);
+    }
 
     clearButton.onclick = () =>
     {
@@ -114,19 +172,6 @@ async function SetupForm(): Promise<void>
 
     searchInput.onkeyup = () =>
     {
-        try
-        {
-            const stored = localStorage.getItem(Constants.SCRYKEY);
-            if (stored)
-            {
-                const unwrapped: any[] = JSON.parse(stored);
-                storedItems = unwrapped;
-            }
-
-        } catch (error)
-        {
-            console.log("Unable to retrieve VanishedItems from local storage.");
-        }
         let term = searchInput.value.toUpperCase();
         if (!term || term.length < 2)
         {
@@ -192,44 +237,28 @@ async function SetupForm(): Promise<void>
                             const freshItem = await OBR.scene.items.getItems([fuseItem.item.id]);
                             if (freshItem.length > 0)
                             {
-                                storedItems.push(freshItem[0]);
+                                storedMetadata.push(freshItem[0]);
                                 await OBR.scene.items.deleteItems([fuseItem.item.id]);
                                 vanishButton.value = "on";
                                 vanishButton.src = "/eyeclosed.svg";
 
-                                try
-                                {
-                                    const json = JSON.stringify(storedItems);
-                                    localStorage.setItem(Constants.SCRYKEY, json);
-                                }
-                                catch (error)
-                                {
-                                    console.log("Cannot save Vanished Items to localstorage, may lose on refresh");
-                                }
+                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
                             }
 
                         }
                         else
                         {
-                            const freshlyStored = storedItems.find(x => x.id === fuseItem.item.id);
+                            const freshlyStored = storedMetadata.find(x => x.id === fuseItem.item.id);
                             if (freshlyStored)
                             {
                                 delete freshlyStored.customTextName;
 
                                 await OBR.scene.items.addItems([freshlyStored]);
-                                storedItems = storedItems.filter(x => x.id !== fuseItem.item.id);
+                                storedMetadata = storedMetadata.filter(x => x.id !== fuseItem.item.id);
                                 vanishButton.value = "off";
                                 vanishButton.src = "/eyeopen.svg";
 
-                                try
-                                {
-                                    const json = JSON.stringify(storedItems);
-                                    localStorage.setItem(Constants.SCRYKEY, json);
-                                }
-                                catch (error)
-                                {
-                                    console.log("Cannot save Vanished Items to localstorage, may lose on refresh");
-                                }
+                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
                             }
                         }
                     };
@@ -244,16 +273,10 @@ async function SetupForm(): Promise<void>
                     {
                         event.stopPropagation();
                         await OBR.scene.items.deleteItems([fuseItem.item.id]);
-                        storedItems = storedItems.filter(x => x.id !== fuseItem.item.id);
-                        try
-                        {
-                            const json = JSON.stringify(storedItems);
-                            localStorage.setItem(Constants.SCRYKEY, json);
-                        }
-                        catch (error)
-                        {
-                            console.log("Cannot save Vanished Items to localstorage, may lose on refresh");
-                        }
+                        storedMetadata = storedMetadata.filter(x => x.id !== fuseItem.item.id);
+
+                        await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+
                         listItem.remove();
                         countElement.innerText = (+countElement.innerText - 1).toString();
                     }
@@ -280,7 +303,7 @@ async function SetupForm(): Promise<void>
             if (searchInput.value.toUpperCase() === "ALL"
                 || searchInput.value.toUpperCase() === "EVERYTHING")
             {
-                vFoundItems = storedItems.map(val => ({
+                vFoundItems = storedMetadata.map(val => ({
                     item: Object.assign(val, {}),
                     matches: [],
                     score: 1
@@ -288,7 +311,7 @@ async function SetupForm(): Promise<void>
             }
             else
             {
-                const vFuse = new Fuse(storedItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
+                const vFuse = new Fuse(storedMetadata, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
                 vFoundItems = vFuse.search(term);
             }
 
@@ -320,19 +343,11 @@ async function SetupForm(): Promise<void>
                         {
                             delete vFuseItem.item.customTextName;
                             await OBR.scene.items.addItems([vFuseItem.item]);
-                            storedItems = storedItems.filter(x => x.id !== vFuseItem.item.id);
+                            storedMetadata = storedMetadata.filter(x => x.id !== vFuseItem.item.id);
                             vanishButton.src = "/eyeopen.svg";
                             vanishButton.value = "on";
 
-                            try
-                            {
-                                const json = JSON.stringify(storedItems);
-                                localStorage.setItem(Constants.SCRYKEY, json);
-                            }
-                            catch (error)
-                            {
-                                console.log("Cannot save Vanished Items to localstorage, may lose on refresh");
-                            }
+                            await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
                         }
                         else
                         {
@@ -340,21 +355,13 @@ async function SetupForm(): Promise<void>
                             const freshItem = await OBR.scene.items.getItems([vFuseItem.item.id]);
                             if (freshItem.length > 0)
                             {
-                                storedItems.push(freshItem[0]);
+                                storedMetadata.push(freshItem[0]);
                                 await OBR.player.deselect([vFuseItem.item.id]);
                                 await OBR.scene.items.deleteItems([vFuseItem.item.id]);
                                 vanishButton.value = "off";
                                 vanishButton.src = "/eyeclosed.svg";
 
-                                try
-                                {
-                                    const json = JSON.stringify(storedItems);
-                                    localStorage.setItem(Constants.SCRYKEY, json);
-                                }
-                                catch (error)
-                                {
-                                    console.log("Cannot save Vanished Items to localstorage, may lose on refresh");
-                                }
+                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
                             }
                         }
                     };
@@ -369,16 +376,10 @@ async function SetupForm(): Promise<void>
                     {
                         event.stopPropagation();
                         await OBR.scene.items.deleteItems([vFuseItem.item.id]);
-                        storedItems = storedItems.filter(x => x.id !== vFuseItem.item.id);
-                        try
-                        {
-                            const json = JSON.stringify(storedItems);
-                            localStorage.setItem(Constants.SCRYKEY, json);
-                        }
-                        catch (error)
-                        {
-                            console.log("Cannot save Vanished Items to localstorage, may lose on refresh");
-                        }
+                        storedMetadata = storedMetadata.filter(x => x.id !== vFuseItem.item.id);
+
+                        await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+
                         listItem.remove();
                         countElement.innerText = (+countElement.innerText - 1).toString();
                     }
