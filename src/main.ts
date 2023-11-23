@@ -83,7 +83,7 @@ async function SetupForm(): Promise<void>
         ${role === "GM" ? '<div id="toggler" class="toggler"></div>' : ''}
         <div class="wrapper">
         <div id="bannerText"></div>
-            <input type="text" id="${role === 'GM' ? '' : 'player'}searchBar" onkeyup="StartSearch()" placeholder="Search for..">
+            <input type="text" id="searchBar" class="${role === 'GM' ? '' : 'player'}searchBar" onkeyup="StartSearch()" placeholder="Search for..">
             <button id="clearSearch" class="${role === 'GM' ? '' : 'player'}clear">X</button>
         </div>
         <div class="scrollable">
@@ -94,7 +94,7 @@ async function SetupForm(): Promise<void>
     ///Scrolling News
     const textArray = [
         "Added 'ALL' and 'EVERYTHING' to search.",
-        "Scry! v1.1.31",
+        "Scry! v1.1.32",
         "Click Lock to disable Player Search",
         "Improved resilience, saves Vanish to scene",
     ];
