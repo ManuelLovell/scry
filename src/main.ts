@@ -94,9 +94,10 @@ async function SetupForm(): Promise<void>
     ///Scrolling News
     const textArray = [
         "Added 'ALL' and 'EVERYTHING' to search.",
-        "Scry! v1.1.32",
+        "Scry! v1.2",
+        "Use 'ID:' as a prefix to an ID to search IDs",
+        "Widened search area",
         "Click Lock to disable Player Search",
-        "Improved resilience, saves Vanish to scene",
     ];
 
     let currentIndex = 0;
@@ -174,6 +175,7 @@ async function SetupForm(): Promise<void>
 
     searchInput.onkeyup = () =>
     {
+        const searchTerm = searchInput.value.toUpperCase();
         let term = searchInput.value.toUpperCase();
         if (!term || term.length < 2)
         {
@@ -181,9 +183,8 @@ async function SetupForm(): Promise<void>
             return searchList.innerHTML = "";
         }
 
-        let foundItems = [];
-        if (searchInput.value.toUpperCase() === "ALL"
-            || searchInput.value.toUpperCase() === "EVERYTHING")
+        let foundItems: any[] = [];
+        if (searchTerm === "ALL" || searchTerm === "EVERYTHING")
         {
             foundItems = sceneItems.map(val => ({
                 item: Object.assign(val, {}),
@@ -191,9 +192,24 @@ async function SetupForm(): Promise<void>
                 score: 1
             }));
         }
+        else if (searchTerm.substring(0, 3) === "ID:")
+        {
+            term = term.substring(3);
+            const fuse = new Fuse(sceneItems, { threshold: 0.0, includeScore: true, keys: ['secretIdentity'] });
+            foundItems = fuse.search(term);
+        }
         else
         {
-            const fuse = new Fuse(sceneItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
+            // Filter out busy layers on normal searching
+            const filteredItems = sceneItems.filter((item) =>
+                item.layer == "ATTACHMENT"
+                || item.layer == "CHARACTER"
+                || item.layer == "PROP"
+                || item.layer == "MOUNT"
+                || item.layer == "MAP"
+                || item.layer == "TEXT");
+
+            const fuse = new Fuse(filteredItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
             foundItems = fuse.search(term);
         }
 
@@ -217,6 +233,7 @@ async function SetupForm(): Promise<void>
 
                 listItem.id = "li-" + fuseItem.item.id;
                 listItem.innerHTML = `${increment}.   ${fuseItem.item.name}${trueName}${fuseItem.item.visible ? "" : " (Hidden)"}`;
+                listItem.title = fuseItem.item.secretIdentity;
 
                 const div = document.createElement('div');
                 div.className = "listdiv";
@@ -239,7 +256,16 @@ async function SetupForm(): Promise<void>
                             const freshItem = await OBR.scene.items.getItems([fuseItem.item.id]);
                             if (freshItem.length > 0)
                             {
-                                storedMetadata.push(freshItem[0]);
+                                const fItem = freshItem[0] as any;
+
+                                // Add custom fields to search on when Vanished
+                                fItem.secretIdentity = fItem.id;
+                                if (fItem.text?.plainText)
+                                {
+                                    fItem.customTextName = fItem.text.plainText;
+                                }
+
+                                storedMetadata.push(fItem);
                                 await OBR.scene.items.deleteItems([fuseItem.item.id]);
                                 vanishButton.value = "on";
                                 vanishButton.src = "/eyeclosed.svg";
@@ -254,6 +280,7 @@ async function SetupForm(): Promise<void>
                             if (freshlyStored)
                             {
                                 delete freshlyStored.customTextName;
+                                delete freshlyStored.secretIdentity;
 
                                 await OBR.scene.items.addItems([freshlyStored]);
                                 storedMetadata = storedMetadata.filter(x => x.id !== fuseItem.item.id);
@@ -301,15 +328,19 @@ async function SetupForm(): Promise<void>
         if (role === "GM")
         {
             // For the vanished cache
-            let vFoundItems = [];
-            if (searchInput.value.toUpperCase() === "ALL"
-                || searchInput.value.toUpperCase() === "EVERYTHING")
+            let vFoundItems: any[] = [];
+            if (searchTerm === "ALL" || searchTerm === "EVERYTHING")
             {
                 vFoundItems = storedMetadata.map(val => ({
                     item: Object.assign(val, {}),
                     matches: [],
                     score: 1
                 }));
+            }
+            else if (searchTerm.substring(0, 3) === "ID:")
+            {
+                const vFuse = new Fuse(storedMetadata, { threshold: 0.0, includeScore: true, keys: ['secretIdentity'] });
+                vFoundItems = vFuse.search(term);
             }
             else
             {
@@ -344,6 +375,8 @@ async function SetupForm(): Promise<void>
                         if (vanishButton.value === "off")
                         {
                             delete vFuseItem.item.customTextName;
+                            delete vFuseItem.item.secretIdentity;
+
                             await OBR.scene.items.addItems([vFuseItem.item]);
                             storedMetadata = storedMetadata.filter(x => x.id !== vFuseItem.item.id);
                             vanishButton.src = "/eyeopen.svg";
@@ -357,7 +390,15 @@ async function SetupForm(): Promise<void>
                             const freshItem = await OBR.scene.items.getItems([vFuseItem.item.id]);
                             if (freshItem.length > 0)
                             {
-                                storedMetadata.push(freshItem[0]);
+                                const fItem = freshItem[0] as any;
+
+                                // Add custom fields to search on when Vanished
+                                fItem.secretIdentity = fItem.id;
+                                if (fItem.text?.plainText)
+                                {
+                                    fItem.customTextName = fItem.text.plainText;
+                                }
+                                storedMetadata.push(fItem);
                                 await OBR.player.deselect([vFuseItem.item.id]);
                                 await OBR.scene.items.deleteItems([vFuseItem.item.id]);
                                 vanishButton.value = "off";
@@ -406,23 +447,16 @@ async function SetupForm(): Promise<void>
 
 async function FilterItems(items: Image[])
 {
-    const filteredItems = items.filter((item) =>
-        item.layer == "ATTACHMENT"
-        || item.layer == "CHARACTER"
-        || item.layer == "PROP"
-        || item.layer == "MOUNT"
-        || item.layer == "MAP");
-
     const customItems = [];
-    for (const item of filteredItems)
+    for (const item of items)
     {
         let anyItem = item as any;
+        anyItem.secretIdentity = item.id;
         if (item.text?.plainText)
         {
             anyItem.customTextName = item.text.plainText;
         }
         customItems.push(anyItem);
     }
-
     sceneItems = customItems;
 }

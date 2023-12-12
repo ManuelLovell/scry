@@ -1,4 +1,4 @@
-import OBR, { Image } from "@owlbear-rodeo/sdk";
+import OBR, { isCurve, isImage } from "@owlbear-rodeo/sdk";
 
 export class ViewportFunctions
 {
@@ -6,7 +6,7 @@ export class ViewportFunctions
      * Center the current OBR viewport on an image
      * @param {import("@owlbear-rodeo/sdk").Image} item - The image item
      */
-    static async CenterViewportOnImage(ctu: Image)
+    static async CenterViewportOnImage(ctu: any)
     {
         const dpi = await OBR.scene.grid.getDpi();
         const scale = await OBR.viewport.getScale();
@@ -44,16 +44,35 @@ export class ViewportFunctions
      * @param {number} dpi - The base DPI of the scene
      * @returns {import("@owlbear-rodeo/sdk").Vector2}
      */
-    static async GetImageCenter(ctu: Image, dpi: number)
+    static async GetImageCenter(ctu: any, dpi: number)
     {
-        const dpiScale = dpi / ctu.grid.dpi;
-        const width = ctu.image.width * dpiScale;
-        const height = ctu.image.height * dpiScale;
-        const offsetX = (ctu.grid.offset.x / ctu.image.width) * width;
-        const offsetY = (ctu.grid.offset.y / ctu.image.height) * height;
-        return {
-            x: ctu.position.x - offsetX + width / 2,
-            y: ctu.position.y - offsetY + height / 2,
-        };
+        if (isImage(ctu))
+        {
+            const dpiScale = dpi / ctu.grid.dpi;
+            const width = ctu.image.width * dpiScale;
+            const height = ctu.image.height * dpiScale;
+            const offsetX = (ctu.grid.offset.x / ctu.image.width) * width;
+            const offsetY = (ctu.grid.offset.y / ctu.image.height) * height;
+            return {
+                x: ctu.position.x - offsetX + width / 2,
+                y: ctu.position.y - offsetY + height / 2,
+            };
+        }
+        else if (isCurve(ctu) && ctu.points.length > 0)
+        {
+            // Curve has no Position
+            return {
+                x: ctu.points[0].x,
+                y: ctu.points[0].y
+            }
+        }
+        else
+        {
+            // Text - Shape - Line - Path - Ruler
+            return {
+                x: ctu.position.x,
+                y: ctu.position.y
+            }
+        }
     }
 }

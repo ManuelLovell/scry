@@ -3,7 +3,6 @@ import { Theme } from "@owlbear-rodeo/sdk";
 export function SetThemeMode(theme: Theme, document: Document): void
 {
     const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
-    console.log(darkThemeMq.matches);
 
     const darkTheme = darkThemeMq.matches ? "dark" : "light";
     const lightTheme = darkThemeMq.matches ? "light" : "dark";
