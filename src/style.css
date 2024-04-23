@@ -51,12 +51,36 @@
     }
 }
 
-#app,
-body {
+#app {
     display: flex;
     height: 100%;
     width: 100%;
-    overflow-x: hidden;
+}
+
+body {
+    margin: 4px;
+}
+
+#header {
+    margin-bottom: 4px;
+}
+
+table {
+    width: 99%;
+    border-collapse: collapse;
+    padding: 0;
+    margin: 0;
+}
+
+th,
+td {
+    padding: 0;
+    margin: 0;
+}
+
+#header {
+    font-weight: bolder;
+    text-align: center;
 }
 
 .toggleClickable {
@@ -65,9 +89,12 @@ body {
     border-color: white;
     border-radius: 8px;
     border-width: 1px;
+    margin-top: 6px;
+    margin-right: 2px;
     height: 25px;
     width: 25px;
 }
+
 .clickable {
     filter: var(--invert);
     float: right;
@@ -101,57 +128,82 @@ body {
 }
 
 .wrapper {
-    position: fixed;
     height: 18%;
-    width: 95%;
-    z-index: 1;
-    /* Set a higher z-index to keep it above other content */
+    width: 100%;
+    display: flex;
 }
 
-.playersearchBar {
+.playerclear {
+    position: absolute;
+    margin: 10px;
+    right: 40px;
+    cursor: pointer;
+}
+
+.clear {
+    position: absolute;
+    margin: 10px;
+    right: 80px;
+    cursor: pointer;
+}
+
+.toggler {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    height: 42px;
+    padding-right: 10px;
+}
+
+.count {
+    width: 100%;
+    height: 42px;
+    text-align: center;
+    line-height: 2.2;
+    font-weight: bolder;
+    cursor: none;
+    border: 1px solid var(--OBR-dark-blue);
+    background-color: var(--OBR-offset-back-half);
+}
+
+#searchBar {
     background-image: url('/search.svg');
     background-position: 10px 12px;
     background-repeat: no-repeat;
     background-color: var(--OBR-offset-back-half);
     color: var(--light-letters);
-    width: calc(100% - 130px);
-    /* Account for odd padding*/
     font-size: 16px;
-    padding: 12px 40px 12px 40px;
+    padding: 12px 0 12px 0;
     border: 1px solid var(--OBR-dark-blue);
-    margin-bottom: 12px;
+    width: 100%;
+    outline: none;
+    text-indent: 40px;
 }
 
-.searchBar {
-    background-image: url('/search.svg');
-    background-position: 10px 12px;
-    background-repeat: no-repeat;
-    background-color: var(--OBR-offset-back-half);
-    color: var(--light-letters);
-    width: calc(100% - 180px);
-    /* Account for odd padding*/
-    font-size: 16px;
-    padding: 12px 40px 12px 40px;
-    border: 1px solid var(--OBR-dark-blue);
-    margin-bottom: 12px;
+#searchBar::placeholder {
+    text-align: left;
+    padding-left: 40px;
 }
 
 .scrollable {
     position: absolute;
     overflow-y: overlay;
-    padding: 5px;
-    height: 72%;
+    padding-top: 2px;
+    padding-left: 5px;
+    height: 70%;
     width: 100%;
     bottom: 0;
     left: 0;
-    max-height: calc(100vh - 50px);
     /* Set a maximum height, subtracting the space taken by the fixed wrapper */
     box-sizing: border-box;
+    margin-bottom: 5px;
+    border-radius: 6px;
 }
 
 #searchList {
     margin: 0;
     padding: 0;
+    height: 100%;
 }
 
 .listdiv {
@@ -169,63 +221,12 @@ body {
     font-size: 16px;
     color: var(--light-letters);
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
     grid-template-columns: 74% 26%;
     cursor: pointer;
 }
 
 #searchList li:hover:not(.header) {
     background-color: var(--OBR-dark-blue);
-}
-
-.playerclear {
-    position: absolute;
-    right: 50px;
-    margin: 10px;
-    cursor: pointer;
-}
-
-.clear {
-    position: absolute;
-    right: 100px;
-    margin: 10px;
-    cursor: pointer;
-}
-
-.toggler
-{
-    justify-content: center;
-    display: flex;
-    position: absolute;
-    text-align: center;
-    align-items: center;
-    line-height: 2.2;
-    font-weight: bolder;
-    font-size: large;
-    right: 57px;
-    top: 8px;
-    width: 40px;
-    height: 42px;
-    border: 1px solid var(--OBR-dark-blue);
-    background-color: var(--OBR-offset-back-half);
-    margin-top: 21px;
-    z-index: 2;
-}
-
-.count {
-    position: absolute;
-    text-align: center;
-    line-height: 2.2;
-    font-weight: bolder;
-    font-size: large;
-    right: 8px;
-    top: 8px;
-    width: 40px;
-    height: 42px;
-    cursor: none;
-    border: 1px solid var(--OBR-dark-blue);
-    background-color: var(--OBR-offset-back-half);
-    margin-top: 21px;
 }
 
 #startup {
@@ -235,29 +236,35 @@ body {
     font-size: xx-large;
 }
 
-#bannerText {
-    font-size: 14px;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 2s ease-in-out;
-    font-style: italic;
-    background: linear-gradient(to right, transparent 0%, var(--OBR-Purple-Select) 50%, transparent 100%);
-}
-
-@keyframes glowingText {
-    0% {
-        text-shadow: 0 0 1px rgba(255, 255, 255, 0.3), 0 0 10px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.3), 0 0 20px rgba(0, 188, 212, 0.3), 0 0 30px rgba(0, 188, 212, 0.3), 0 0 40px rgba(0, 188, 212, 0.3), 0 0 55px rgba(0, 188, 212, 0.3);
-    }
-
-    100% {
-        text-shadow: 0 0 1px rgba(255, 255, 255, 0.3), 0 0 10px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.3), 0 0 20px rgba(255, 235, 59, 0.3), 0 0 30px rgba(255, 235, 59, 0.3), 0 0 40px rgba(255, 235, 59, 0.3), 0 0 55px rgba(255, 235, 59, 0.3);
-    }
-}
-
-#locked
-{
+#locked {
     align-items: center;
     justify-content: center;
     text-align: center;
     font-size: large;
+}
+
+#whatsNew {
+    float: right;
+}
+
+.imageIcon {
+    width: 20px;
+    height: 20px;
+    margin-left: 6px;
+}
+
+.clickable {
+    filter: var(--invert);
+    background-color: transparent !important;
+    border-style: none !important;
+    vertical-align: text-bottom;
+    height: 20px;
+    width: 20px;
+    margin-right: 4px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.whats-new-shine {
+    filter: invert(50%) sepia(44%) saturate(43) hue-rotate(-45deg) brightness(119%) contrast(80%);
 }

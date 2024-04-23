@@ -1,132 +1,110 @@
-import OBR, { Image } from '@owlbear-rodeo/sdk'
-import { ViewportFunctions } from './viewport';
-import * as Utilities from "./utilities";
+import OBR from '@owlbear-rodeo/sdk'
 import Fuse from 'fuse.js';
-import './style.css'
+import * as Utilities from './bsUtilities';
+import { ViewportFunctions } from './viewport';
 import { Constants } from './constants';
-
-let sceneItems: any[] = [];
-let storedMetadata: any[] = [];
-let locked = false;
-let role: string;
-const appWindow = document.querySelector<HTMLDivElement>('#app')!
-const lockWindow = document.querySelector<HTMLDivElement>('#locked')!
+import { BSCACHE } from './bsSceneCache';
+import './style.css'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `<div id="startup">Awaiting scene...</div>`;
 
 OBR.onReady(async () =>
 {
-    // Set theme accordingly
-    const theme = await OBR.theme.getTheme();
-    Utilities.SetThemeMode(theme, document);
-    OBR.theme.onChange((theme) =>
+    await BSCACHE.InitializeCache();
+    setTimeout(async () =>
     {
-        Utilities.SetThemeMode(theme, document);
-    });
-    const sceneReady = await OBR.scene.isReady();
-    if (sceneReady)
-    {
-        await SetupForm();
-    }
+        if (BSCACHE.sceneReady === false) await BSCACHE.InitializeCache();
+        BSCACHE.SetupHandlers();
 
-    role = await OBR.player.getRole();
-    OBR.scene.onReadyChange(async (ready: boolean) =>
-    {
-        if (ready)
+        if (BSCACHE.sceneReady)
         {
             await SetupForm();
         }
-        else
-        {
-            document.querySelector<HTMLDivElement>('#app')!.innerHTML = `<div id="startup">Awaiting Scene..</div>`;
-        }
-    });
-
-    OBR.scene.onMetadataChange(async (metadata) =>
-    {
-        storedMetadata = metadata[`${Constants.EXTENSIONID}/stored`] as [];
-        if (!storedMetadata) storedMetadata = [];
-        
-        const checkLock = metadata[`${Constants.EXTENSIONID}/locked`] as boolean;
-        locked = checkLock ? true : false;
-        if (role === "PLAYER")
-        {
-            if (locked)
-            {
-                appWindow.hidden = true;
-                appWindow.style.display = "none";
-                lockWindow.hidden = false;
-                await OBR.action.setHeight(50);
-            }
-            else
-            {
-                appWindow.hidden = false;
-                appWindow.style.display = "flex";
-                lockWindow.hidden = true;
-                await OBR.action.setHeight(300);
-            }
-        }
-    });
-
-    OBR.scene.items.onChange((bItems) =>
-    {
-        const items = bItems as Image[];
-        FilterItems(items);
-    });
+    }, 1000);
 });
 
-async function SetupForm(): Promise<void>
+export async function SetupForm(): Promise<void>
 {
-    await FilterItems(await OBR.scene.items.getItems());
-    document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-        <div id="counter" class="count"></div>
-        ${role === "GM" ? '<div id="toggler" class="toggler"></div>' : ''}
-        <div class="wrapper">
-        <div id="bannerText"></div>
-            <input type="text" id="searchBar" class="${role === 'GM' ? '' : 'player'}searchBar" onkeyup="StartSearch()" placeholder="Search for..">
-            <button id="clearSearch" class="${role === 'GM' ? '' : 'player'}clear">X</button>
-        </div>
-        <div class="scrollable">
-            <ol id="searchList"></ol>
-        </div>
-    `;
-
-    ///Scrolling News
-    const textArray = [
-        "Added 'ALL' and 'EVERYTHING' to search.",
-        "Scry! v1.2",
-        "Use 'ID:' as a prefix to an ID to search IDs",
-        "Widened search area",
-        "Click Lock to disable Player Search",
-    ];
-
-    let currentIndex = 0;
-    const textContainer = document.getElementById("bannerText")!;
-
-    function fadeOut()
-    {
-        textContainer.style.opacity = "0";
-        setTimeout(() =>
+    if (BSCACHE.playerRole === 'GM')
         {
-            fadeIn();
-        }, 2000); // Fade-out time is 2 seconds
-    }
-
-    function fadeIn()
-    {
-        currentIndex = (currentIndex + 1) % textArray.length;
-        textContainer.textContent = textArray[currentIndex];
-        textContainer.style.opacity = "1";
-        setTimeout(() =>
+            document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+            <table>
+                <colgroup>
+                    <col style="width: 40%;">  
+                    <col style="width: 20%;">  
+                    <col style="width: 20%;">  
+                    <col style="width: 10%;">  
+                    <col style="width: 10%;">  
+                </colgroup>
+                <tr>
+                    <td colspan="4"><div id="header">Scry!</div></td>
+                    <td><div id="whatsNew"></div></td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <div style="display:flex;">
+                            <div class="wrapper">
+                                <input type="text" id="searchBar" class="searchBar" onkeyup="StartSearch()" placeholder="Search for..">
+                                <button id="clearSearch" class="clear">X</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div id="toggler" class="toggler"></div>
+                    </td>
+                    <td>
+                        <div id="counter" class="count"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="5">
+                        <div class="scrollable">
+                            <ol id="searchList"></ol>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        `;
+        }
+        else
         {
-            fadeOut();
-        }, 10000); // Fade-in time is 2 seconds
-    }
-    ///Scrolling News
-
-    // Initial display
-    textContainer.textContent = textArray[currentIndex];
-    fadeIn();
+            document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+            <table>
+                <colgroup>
+                    <col style="width: 40%;">  
+                    <col style="width: 20%;">  
+                    <col style="width: 20%;">  
+                    <col style="width: 10%;">  
+                    <col style="width: 10%;">  
+                </colgroup>
+                <tr>
+                    <td colspan="4"><div id="header">Scry!</div></td>
+                    <td><div id="whatsNew"></div></td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <div style="display:flex;">
+                            <div class="wrapper">
+                                <input type="text" id="searchBar" class="playersearchBar" onkeyup="StartSearch()" placeholder="Search for..">
+                                <button id="clearSearch" class="playerclear">X</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div id="counter" class="count"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="5">
+                        <div class="scrollable">
+                            <ol id="searchList"></ol>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        `;
+        }
+    
 
     const searchList = document.getElementById("searchList") as HTMLUListElement;
     const searchInput = document.getElementById("searchBar") as HTMLInputElement;
@@ -136,13 +114,13 @@ async function SetupForm(): Promise<void>
     countElement.title = "Number of Results";
     const clearButton = document.getElementById("clearSearch") as HTMLButtonElement;
 
-    if (role === "GM")
+    if (BSCACHE.playerRole === "GM")
     {
         const playerToggle = document.createElement('input');
         playerToggle.type = "image";
         playerToggle.title = "Disable Player Access";
         playerToggle.className = "toggleClickable";
-        playerToggle.value = locked ? "on" : "off";
+        playerToggle.value = BSCACHE.locked ? "on" : "off";
         playerToggle.onclick = async function (event: Event)
         {
             event.stopPropagation();
@@ -154,14 +132,14 @@ async function SetupForm(): Promise<void>
             }
             else
             {
-    
+
                 playerToggle.value = "off";
                 playerToggle.src = "/unlock.svg";
                 await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/locked`]: false });
-    
+
             }
         };
-        playerToggle.src = locked ? "/lock.svg" : "/unlock.svg";
+        playerToggle.src = BSCACHE.locked ? "/lock.svg" : "/unlock.svg";
         toggleElement.appendChild(playerToggle);
     }
 
@@ -173,44 +151,67 @@ async function SetupForm(): Promise<void>
         countElement.innerText = "...";
     };
 
+    const whatsNewContainer = document.getElementById("whatsNew") as HTMLDivElement;
+    whatsNewContainer.appendChild(Utilities.GetWhatsNewButton());
+
     searchInput.onkeyup = () =>
     {
-        const searchTerm = searchInput.value.toUpperCase();
-        let term = searchInput.value.toUpperCase();
-        if (!term || term.length < 2)
+        const normalizedSearchTerm = searchInput.value.toUpperCase().trim();
+
+        // Check if search term is too short or empty
+        if (!normalizedSearchTerm || normalizedSearchTerm.length < 2)
         {
-            countElement.innerText = "...";
-            return searchList.innerHTML = "";
+            countElement.innerText = "..."; // Update count element text as needed
+            return searchList.innerHTML = ""; // Clear search list
         }
+
+        // Extract search prefix and term
+        const [prefix, term] = extractPrefixAndTerm(normalizedSearchTerm);
 
         let foundItems: any[] = [];
-        if (searchTerm === "ALL" || searchTerm === "EVERYTHING")
-        {
-            foundItems = sceneItems.map(val => ({
-                item: Object.assign(val, {}),
-                matches: [],
-                score: 1
-            }));
-        }
-        else if (searchTerm.substring(0, 3) === "ID:")
-        {
-            term = term.substring(3);
-            const fuse = new Fuse(sceneItems, { threshold: 0.0, includeScore: true, keys: ['secretIdentity'] });
-            foundItems = fuse.search(term);
-        }
-        else
-        {
-            // Filter out busy layers on normal searching
-            const filteredItems = sceneItems.filter((item) =>
-                item.layer == "ATTACHMENT"
-                || item.layer == "CHARACTER"
-                || item.layer == "PROP"
-                || item.layer == "MOUNT"
-                || item.layer == "MAP"
-                || item.layer == "TEXT");
 
-            const fuse = new Fuse(filteredItems, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
-            foundItems = fuse.search(term);
+        // Handle different search prefixes
+        switch (prefix)
+        {
+            case "ALL":
+            case "EVERYTHING":
+                foundItems = BSCACHE.sceneItems.map(val => ({
+                    item: { ...val }, // Copy item properties using spread operator
+                    matches: [],
+                    score: 1
+                }));
+                break;
+            case "ID":
+                foundItems = performSearch(BSCACHE.sceneItems, term, ['secretIdentity']);
+                break;
+            case "MAP":
+            case "PROP":
+            case "MOUNT":
+            case "CHARACTER":
+            case "ATTACHMENT":
+            case "NOTE":
+            case "FOG":
+            case "TEXT":
+                const filteredItems = BSCACHE.sceneItems.filter(item => item.layer === prefix);
+                if (!term)
+                {
+                    foundItems = filteredItems.map(val => ({
+                        item: { ...val }, // Copy item properties using spread operator
+                        matches: [],
+                        score: 1
+                    }));
+                }
+                else
+                {
+                    foundItems = performSearch(filteredItems, term, ['name', 'customTextName'], 0.4);
+                }
+                break;
+            default:
+                // Default case for unknown prefixes (e.g., handle 'NORMAL' search)
+                const validLayers = ["ATTACHMENT", "CHARACTER", "PROP", "MOUNT", "MAP", "TEXT"];
+                const allFilteredItems = BSCACHE.sceneItems.filter(item => validLayers.includes(item.layer));
+                foundItems = performSearch(allFilteredItems, term, ['name', 'customTextName'], 0.4);
+                break;
         }
 
         searchList.innerHTML = "";
@@ -220,12 +221,12 @@ async function SetupForm(): Promise<void>
 
         if (foundItems.length > 0)
         {
-            foundBase = role === "GM" ? foundItems.length : foundItems.filter(item => item.item.visible === true).length;
+            foundBase = BSCACHE.playerRole === "GM" ? foundItems.length : foundItems.filter(item => item.item.visible === true).length;
             countElement.innerText = foundBase.toString();
 
             for (const fuseItem of foundItems)
             {
-                if (fuseItem.item.visible === false && role !== "GM") continue;
+                if (fuseItem.item.visible === false && BSCACHE.playerRole !== "GM") continue;
 
                 const listItem = document.createElement("li");
                 let trueName = fuseItem.item.name.toUpperCase().includes(term) ? "" : ` (${fuseItem.item.customTextName})`;
@@ -238,7 +239,7 @@ async function SetupForm(): Promise<void>
                 const div = document.createElement('div');
                 div.className = "listdiv";
 
-                if (role === "GM")
+                if (BSCACHE.playerRole === "GM")
                 {
                     const vanishButton = document.createElement('input');
                     vanishButton.type = "image";
@@ -265,29 +266,29 @@ async function SetupForm(): Promise<void>
                                     fItem.customTextName = fItem.text.plainText;
                                 }
 
-                                storedMetadata.push(fItem);
+                                BSCACHE.storedMetaItems.push(fItem);
                                 await OBR.scene.items.deleteItems([fuseItem.item.id]);
                                 vanishButton.value = "on";
                                 vanishButton.src = "/eyeclosed.svg";
 
-                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: BSCACHE.storedMetaItems });
                             }
 
                         }
                         else
                         {
-                            const freshlyStored = storedMetadata.find(x => x.id === fuseItem.item.id);
+                            const freshlyStored = BSCACHE.storedMetaItems.find(x => x.id === fuseItem.item.id) as any;
                             if (freshlyStored)
                             {
                                 delete freshlyStored.customTextName;
                                 delete freshlyStored.secretIdentity;
 
                                 await OBR.scene.items.addItems([freshlyStored]);
-                                storedMetadata = storedMetadata.filter(x => x.id !== fuseItem.item.id);
+                                BSCACHE.storedMetaItems = BSCACHE.storedMetaItems.filter(x => x.id !== fuseItem.item.id);
                                 vanishButton.value = "off";
                                 vanishButton.src = "/eyeopen.svg";
 
-                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: BSCACHE.storedMetaItems });
                             }
                         }
                     };
@@ -302,9 +303,9 @@ async function SetupForm(): Promise<void>
                     {
                         event.stopPropagation();
                         await OBR.scene.items.deleteItems([fuseItem.item.id]);
-                        storedMetadata = storedMetadata.filter(x => x.id !== fuseItem.item.id);
+                        BSCACHE.storedMetaItems = BSCACHE.storedMetaItems.filter(x => x.id !== fuseItem.item.id);
 
-                        await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+                        await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: BSCACHE.storedMetaItems });
 
                         listItem.remove();
                         countElement.innerText = (+countElement.innerText - 1).toString();
@@ -325,37 +326,61 @@ async function SetupForm(): Promise<void>
             }
         }
 
-        if (role === "GM")
+        if (BSCACHE.playerRole === "GM")
         {
             // For the vanished cache
             let vFoundItems: any[] = [];
-            if (searchTerm === "ALL" || searchTerm === "EVERYTHING")
+            switch (prefix)
             {
-                vFoundItems = storedMetadata.map(val => ({
-                    item: Object.assign(val, {}),
-                    matches: [],
-                    score: 1
-                }));
-            }
-            else if (searchTerm.substring(0, 3) === "ID:")
-            {
-                const vFuse = new Fuse(storedMetadata, { threshold: 0.0, includeScore: true, keys: ['secretIdentity'] });
-                vFoundItems = vFuse.search(term);
-            }
-            else
-            {
-                const vFuse = new Fuse(storedMetadata, { threshold: 0.4, includeScore: true, keys: ['name', 'customTextName'] });
-                vFoundItems = vFuse.search(term);
+                case "ALL":
+                case "EVERYTHING":
+                    vFoundItems = BSCACHE.storedMetaItems.map(val => ({
+                        item: { ...val }, // Copy item properties using spread operator
+                        matches: [],
+                        score: 1
+                    }));
+                    break;
+                case "ID":
+                    vFoundItems = performSearch(BSCACHE.storedMetaItems, term, ['secretIdentity']);
+                    break;
+                case "MAP":
+                case "PROP":
+                case "MOUNT":
+                case "CHARACTER":
+                case "ATTACHMENT":
+                case "NOTE":
+                case "FOG":
+                case "TEXT":
+                    const vfilteredItems = BSCACHE.storedMetaItems.filter(item => item.layer === prefix);
+                    if (!term)
+                    {
+                        vFoundItems = vfilteredItems.map(val => ({
+                            item: { ...val }, // Copy item properties using spread operator
+                            matches: [],
+                            score: 1
+                        }));
+                    }
+                    else
+                    {
+                        vFoundItems = performSearch(vfilteredItems, term, ['name', 'customTextName'], 0.4);
+                    }
+                    break;
+                default:
+                    // Default case for unknown prefixes (e.g., handle 'NORMAL' search)
+                    const validLayers = ["ATTACHMENT", "CHARACTER", "PROP", "MOUNT", "MAP", "TEXT"];
+                    const vAllFilteredItems = BSCACHE.storedMetaItems.filter(item => validLayers.includes(item.layer));
+                    vFoundItems = performSearch(vAllFilteredItems, term, ['name', 'customTextName'], 0.4);
+                    break;
             }
 
             if (vFoundItems.length > 0)
             {
-                const visibleCount = role === "GM" ? vFoundItems.length : vFoundItems.filter(item => item.item.visible === true).length;
+                const visibleCount = BSCACHE.playerRole === "GM" ? vFoundItems.length : vFoundItems.filter(item => item.item.visible === true).length;
                 countElement.innerText = foundBase > 0 ? (foundBase + visibleCount).toString() : visibleCount.toString();
 
                 for (const vFuseItem of vFoundItems)
                 {
-                    if (vFuseItem.item.visible === false && role !== "GM") continue;
+                    if (vFuseItem.item.visible === false && BSCACHE.playerRole !== "GM") continue;
 
                     const listItem = document.createElement("li");
                     let trueName = vFuseItem.item.name.toUpperCase().includes(term) ? "" : ` (${vFuseItem.item.text?.plainText})`;
@@ -378,11 +403,11 @@ async function SetupForm(): Promise<void>
                             delete vFuseItem.item.secretIdentity;
 
                             await OBR.scene.items.addItems([vFuseItem.item]);
-                            storedMetadata = storedMetadata.filter(x => x.id !== vFuseItem.item.id);
+                            BSCACHE.storedMetaItems = BSCACHE.storedMetaItems.filter(x => x.id !== vFuseItem.item.id);
                             vanishButton.src = "/eyeopen.svg";
                             vanishButton.value = "on";
 
-                            await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+                            await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: BSCACHE.storedMetaItems });
                         }
                         else
                         {
@@ -398,13 +423,13 @@ async function SetupForm(): Promise<void>
                                 {
                                     fItem.customTextName = fItem.text.plainText;
                                 }
-                                storedMetadata.push(fItem);
+                                BSCACHE.storedMetaItems.push(fItem);
                                 await OBR.player.deselect([vFuseItem.item.id]);
                                 await OBR.scene.items.deleteItems([vFuseItem.item.id]);
                                 vanishButton.value = "off";
                                 vanishButton.src = "/eyeclosed.svg";
 
-                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+                                await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: BSCACHE.storedMetaItems });
                             }
                         }
                     };
@@ -419,9 +444,9 @@ async function SetupForm(): Promise<void>
                     {
                         event.stopPropagation();
                         await OBR.scene.items.deleteItems([vFuseItem.item.id]);
-                        storedMetadata = storedMetadata.filter(x => x.id !== vFuseItem.item.id);
+                        BSCACHE.storedMetaItems = BSCACHE.storedMetaItems.filter(x => x.id !== vFuseItem.item.id);
 
-                        await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: storedMetadata });
+                        await OBR.scene.setMetadata({ [`${Constants.EXTENSIONID}/stored`]: BSCACHE.storedMetaItems });
 
                         listItem.remove();
                         countElement.innerText = (+countElement.innerText - 1).toString();
@@ -442,21 +467,23 @@ async function SetupForm(): Promise<void>
                 }
             }
         }
-    }
-}
 
-async function FilterItems(items: Image[])
-{
-    const customItems = [];
-    for (const item of items)
-    {
-        let anyItem = item as any;
-        anyItem.secretIdentity = item.id;
-        if (item.text?.plainText)
+        function extractPrefixAndTerm(searchTerm: string): [string, string]
         {
-            anyItem.customTextName = item.text.plainText;
+            const prefixLength = searchTerm.indexOf(':');
+            if (prefixLength !== -1)
+            {
+                const prefix = searchTerm.substring(0, prefixLength);
+                const term = searchTerm.substring(prefixLength + 1);
+                return [prefix, term];
+            }
+            return ["", searchTerm];
         }
-        customItems.push(anyItem);
+
+        function performSearch(items: any[], term: string, keys: string[], threshold = 0.0): any[]
+        {
+            const fuse = new Fuse(items, { threshold, includeScore: true, keys });
+            return fuse.search(term);
+        }
     }
-    sceneItems = customItems;
 }
