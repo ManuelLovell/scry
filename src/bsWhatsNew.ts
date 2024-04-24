@@ -7,6 +7,9 @@ const footer = document.querySelector<HTMLElement>('#bs-whatsnew-notes')!;
 
 whatsnew.innerHTML = `
   <div id="newsContainer">
+    <h1>Scry! 4/24</h1>
+    Slight hiccup. Forgot to add the loader for stored 'Vanisihed' items. Fixed.
+    </br>
     <h1>Scry! 4/23</h1>
     Slight revamp. Bringing things more in line with the other extensions.
     </br> Next steps will be adding more documentation to this part (As well as the OBR store..) but as you can guess, I have a lot of writing to do.

@@ -106,7 +106,7 @@ class BSCache
             if (this.sceneReady)
             {
                 const items = await OBR.scene.items.getItems();
-                
+
                 const customItems = [];
                 for (const item of items)
                 {
@@ -124,7 +124,15 @@ class BSCache
 
         if (this.caches.includes(BSCache.SCENEMETA))
         {
-            if (this.sceneReady) this.sceneMetadata = await OBR.scene.getMetadata();
+            if (this.sceneReady)
+            {
+                this.sceneMetadata = await OBR.scene.getMetadata();
+                const savedItems = this.sceneMetadata[`${Constants.EXTENSIONID}/stored`];
+                if (savedItems)
+                {
+                    this.storedMetaItems = savedItems as Item[];
+                }
+            }
         }
 
         if (this.caches.includes(BSCache.SCENEGRID))
@@ -387,4 +395,4 @@ class BSCache
 };
 
 // Set the handlers needed for this Extension
-export const BSCACHE = new BSCache([BSCache.SCENEITEMS, BSCache.PLAYER]);
+export const BSCACHE = new BSCache([BSCache.SCENEITEMS, BSCache.SCENEMETA, BSCache.PLAYER]);
