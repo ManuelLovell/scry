@@ -149,7 +149,7 @@ class BSCache
             if (this.sceneReady) this.roomMetadata = await OBR.room.getMetadata();
         }
 
-        //await this.CheckRegistration();
+        await this.CheckRegistration();
     }
 
     public KillHandlers()
