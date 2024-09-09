@@ -38,7 +38,7 @@ export async function SetupForm(): Promise<void>
                 </colgroup>
                 <tr>
                     <td colspan="4"><div id="header">Scry!</div></td>
-                    <td><div id="whatsNew"></div></td>
+                    <td><div id="patreonContainer"></div></td>
                 </tr>
                 <tr>
                     <td colspan="3">
@@ -79,7 +79,7 @@ export async function SetupForm(): Promise<void>
                 </colgroup>
                 <tr>
                     <td colspan="4"><div id="header">Scry!</div></td>
-                    <td><div id="whatsNew"></div></td>
+                    <td><div id="patreonContainer"></div></td>
                 </tr>
                 <tr>
                     <td colspan="4">
@@ -151,8 +151,8 @@ export async function SetupForm(): Promise<void>
         countElement.innerText = "...";
     };
 
-    const whatsNewContainer = document.getElementById("whatsNew") as HTMLDivElement;
-    whatsNewContainer.appendChild(Utilities.GetWhatsNewButton());
+    const patreonContainer = document.getElementById("patreonContainer") as HTMLDivElement;
+    patreonContainer.appendChild(Utilities.GetPatreonButton());
 
     searchInput.onkeyup = () =>
     {

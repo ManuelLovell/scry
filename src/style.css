@@ -95,18 +95,6 @@ td {
     width: 25px;
 }
 
-.clickable {
-    filter: var(--invert);
-    float: right;
-    border-style: solid;
-    border-color: white;
-    border-radius: 8px;
-    border-width: 1px;
-    height: 25px;
-    width: 25px;
-    margin-left: 10px;
-}
-
 /* custom scrollbar */
 ::-webkit-scrollbar {
     width: 20px;
@@ -260,11 +248,16 @@ td {
     vertical-align: text-bottom;
     height: 20px;
     width: 20px;
-    margin-right: 4px;
-    margin-left: 10px;
     cursor: pointer;
 }
 
 .whats-new-shine {
     filter: invert(50%) sepia(44%) saturate(43) hue-rotate(-45deg) brightness(119%) contrast(80%);
+}
+
+#patreonContainer {
+    border: 1px solid var(--OBR-offset-fore);
+    border-radius: 6px;
+    text-align: center;
+    padding: 2px;
 }
